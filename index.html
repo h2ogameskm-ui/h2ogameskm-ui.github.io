@@ -775,7 +775,7 @@ musicOn = volMus > 0;
 function initAudio(){
   if (ac){ if (ac.state === 'suspended') ac.resume(); return; }
   try {
-    ac = new (window.AudioContext || window.webkitAudioContext)();
+    const AC = window.AudioContext || window.webkitAudioContext; try { ac = new AC({ latencyHint: 'interactive' }); } catch (e) { ac = new AC(); }
     const comp = ac.createDynamicsCompressor(); comp.connect(ac.destination);
     musG = ac.createGain(); musG.gain.value = .55 * volMus / 10; musG.connect(comp);
     sfxG = ac.createGain(); sfxG.gain.value = .8 * volSfx / 10; sfxG.connect(comp);
@@ -1240,8 +1240,10 @@ function tapAt(e){
 }
 scr.addEventListener('pointermove', e => { if (state === 'pause' || state === 'modes'){ const h = hitAt(e); if (h && h.hover) h.hover(); } });
 function bindBtn(id, on, off){
-  const el = document.getElementById(id);
-  el.addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); el.classList.add('on'); on(); });
+  const el = document.getElementById(id); let fast = 0;
+  el.addEventListener('touchstart', e => { e.preventDefault(); fast = performance.now(); el.classList.add('on'); on(); initAudio(); }, { passive: false });
+  el.addEventListener('touchend', e => { e.preventDefault(); el.classList.remove('on'); off(); }, { passive: false });
+  el.addEventListener('pointerdown', e => { e.preventDefault(); if (performance.now() - fast < 600) return; initAudio(); el.classList.add('on'); on(); });
   const up = () => { el.classList.remove('on'); off(); };
   el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up);
 }
@@ -1280,7 +1282,7 @@ const tdEl = document.getElementById('td');
 tdEl.addEventListener('pointerdown', e => {
   e.preventDefault(); initAudio(); tdEl.classList.add('on'); try { tdEl.setPointerCapture(e.pointerId); } catch (er) {}
   dsh = { id: e.pointerId, x: e.clientX, y: e.clientY, done: false };
-  dsh.tm = setTimeout(() => { if (dsh && !dsh.done){ dsh.done = true; dashPress(); } }, 90);
+  dsh.tm = setTimeout(() => { if (dsh && !dsh.done){ dsh.done = true; dashPress(); } }, 45);
 });
 tdEl.addEventListener('pointermove', e => {
   if (!dsh || dsh.done || e.pointerId !== dsh.id) return;
@@ -1931,7 +1933,7 @@ function initAmb(){ amb = []; for (let i = 0; i < 30; i++) amb.push({ x: rnd(0, 
 const DASH_T = .16;
 function tryJump(p, dir, inDash){
   if (p.coyote > 0){
-    p.vy = -365; p.buffer = 0; p.coyote = 0; p.ground = false; p.jumping = true;
+    p.vy = -365; p.buffer = 0; p.coyote = 0; p.ground = false; p.jumping = true; p.jt = 0;
     // saut pendant un dash horizontal au sol = « super saut » qui garde l'élan
     if (inDash && p.dashDir.x){ p.vx = Math.sign(p.dashDir.x) * 205; p.vy = -330; burst(p.x + 5, p.y + p.h, ['#7affd4', '#ffffff'], 8, 70, -20, 0); }
     p.sx = .7; p.sy = 1.35; sfx.jump(); dust(p.x + p.w / 2, p.y + p.h, 4); stats.jumps = (stats.jumps || 0) + 1;
@@ -1943,7 +1945,7 @@ function tryJump(p, dir, inDash){
     // (toucher le sol ou l'autre mur remet tout à zéro)
     if (lw === p.wjSide && p.y < p.wjY + 6) return false;
     p.vy = -350; p.vx = -lw * 175; p.knock = .15; p.face = -lw;
-    p.buffer = 0; p.wallCoyote = 0; p.jumping = true; p.sx = .75; p.sy = 1.3; sfx.wall(); stats.jumps = (stats.jumps || 0) + 1;
+    p.buffer = 0; p.wallCoyote = 0; p.jumping = true; p.jt = 0; p.sx = .75; p.sy = 1.3; sfx.wall(); stats.jumps = (stats.jumps || 0) + 1;
     p.wjSide = lw; p.wjY = p.y;
     for (let i = 0; i < 5; i++) parts.push({ x: p.x + (lw > 0 ? p.w : 0), y: p.y + rnd(2, 12), vx: -lw * rnd(20, 60), vy: rnd(-30, 10), life: .35, max: .35, col: '#ffffff', s: 1, g: 0 });
     return true;
@@ -2112,7 +2114,9 @@ function updatePlayer(dt){
     p.coyote = p.ground ? .12 : p.coyote - dt;
     p.buffer -= dt;
     if (p.buffer > 0) tryJump(p, dir, false);
-    if (p.jumping && !inp.jump && p.vy < 0){ p.vy *= .45; p.jumping = false; }
+    // saut à hauteur variable ; au doigt, un appui rapide donne quand même un bon saut
+    p.jt = (p.jt || 0) + dt;
+    if (p.jumping && !inp.jump && p.vy < 0 && p.jt > (mobile ? .16 : 0)){ p.vy *= mobile ? .62 : .45; p.jumping = false; }
     if (p.vy >= 0) p.jumping = false;
     // ---- gravité / glissade murale
     const gmul = (Math.abs(p.vy) < 45 && inp.jump) ? .55 : (p.vy > 0 ? 1.15 : 1);
