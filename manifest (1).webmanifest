@@ -1,0 +1,23 @@
+{
+  "id": "/",
+  "name": "Pip et les Étoiles Perdues",
+  "short_name": "Pip",
+  "description": "Un jeu de plateforme pixel art par KAÏS – H2O GAMES. Aide Pip à retrouver les étoiles perdues !",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b0620",
+  "theme_color": "#1c0f48",
+  "categories": ["games"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "/cap-1.png", "sizes": "1920x1080", "type": "image/png", "form_factor": "wide" },
+    { "src": "/cap-2.png", "sizes": "1920x1080", "type": "image/png", "form_factor": "wide" }
+  ]
+}
